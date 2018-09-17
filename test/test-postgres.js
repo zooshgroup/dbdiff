@@ -4,7 +4,7 @@ var dedent = require('dedent')
 var conString1 = 'postgres://postgres:postgres@localhost/db1'
 var conSettings2 = {
   dialect: 'postgres',
-  username: 'postgres',
+  user: 'postgres',
   password: 'postgres',
   database: 'db2',
   host: 'localhost',
@@ -15,6 +15,14 @@ var conSettings2 = {
 var utils = require('./utils')('postgres', conString1, conSettings2)
 
 describe('Postgresql', () => {
+  before('connect', () => {
+    return utils.connect();
+  })
+
+  after('end', () => {
+    return utils.end();
+  })
+
   it('should create a table', () => {
     var commands1 = []
     var commands2 = ['CREATE TABLE users (email VARCHAR(255), tags varchar(255)[])']
@@ -25,7 +33,7 @@ describe('Postgresql', () => {
       );
     `
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   it('should drop a table', () => {
     var commands1 = ['CREATE TABLE users (email VARCHAR(255))']
@@ -39,7 +47,7 @@ describe('Postgresql', () => {
         var expected = '-- DROP TABLE "public"."users";'
         return utils.runAndCompare(commands1, commands2, expected, ['safe', 'warn'])
       })
-  })
+  }).timeout(5000)
 
   it('should create a table wih a serial sequence', () => {
     var commands1 = []
@@ -52,7 +60,7 @@ describe('Postgresql', () => {
       );
     `
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   it('should add a column to a table', () => {
     var commands1 = ['CREATE TABLE users (email VARCHAR(255))']
@@ -62,7 +70,7 @@ describe('Postgresql', () => {
     ]
     var expected = 'ALTER TABLE "public"."users" ADD COLUMN "first_name" character varying(255) NULL;'
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   it('should drop a column from a table', () => {
     var commands1 = [
@@ -81,7 +89,7 @@ describe('Postgresql', () => {
         var expected = '-- ALTER TABLE "public"."users" DROP COLUMN "first_name";'
         return utils.runAndCompare(commands1, commands2, expected, ['safe', 'warn'])
       })
-  })
+  }).timeout(5000)
 
   it('should change the type of a column', () => {
     var commands1 = [
@@ -107,7 +115,7 @@ describe('Postgresql', () => {
         `
         return utils.runAndCompare(commands1, commands2, expected, ['safe'])
       })
-  })
+  }).timeout(5000)
 
   it('should change a column to not nullable', () => {
     var commands1 = [
@@ -127,7 +135,7 @@ describe('Postgresql', () => {
         var expected = '-- ALTER TABLE "public"."users" ALTER COLUMN "first_name" SET NOT NULL;'
         return utils.runAndCompare(commands1, commands2, expected, ['safe'])
       })
-  })
+  }).timeout(5000)
 
   it('should change a column to nullable', () => {
     var commands1 = [
@@ -140,21 +148,21 @@ describe('Postgresql', () => {
     ]
     var expected = 'ALTER TABLE "public"."users" ALTER COLUMN "first_name" DROP NOT NULL;'
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   it('should create a sequence', () => {
     var commands1 = []
     var commands2 = ['CREATE SEQUENCE seq_name']
     var expected = 'CREATE SEQUENCE "public"."seq_name" INCREMENT 1 MINVALUE 1 MAXVALUE 9223372036854775807 START 1 NO CYCLE;'
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   it('should drop a sequence', () => {
     var commands1 = ['CREATE SEQUENCE seq_name']
     var commands2 = []
     var expected = 'DROP SEQUENCE "public"."seq_name";'
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   // TODO: update a sequence
 
@@ -170,7 +178,7 @@ describe('Postgresql', () => {
     ]
     var expected = 'CREATE INDEX "users_email" ON "public"."users" USING btree ("email");'
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   it('should drop an index', () => {
     var commands1 = [
@@ -184,7 +192,7 @@ describe('Postgresql', () => {
     ]
     var expected = 'DROP INDEX "public"."users_email";'
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   it('should recreate an index', () => {
     var commands1 = [
@@ -207,7 +215,7 @@ describe('Postgresql', () => {
       CREATE INDEX "some_index" ON "public"."users" USING btree ("last_name");
     `
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   it('should create a table with an index', () => {
     var commands1 = []
@@ -223,7 +231,7 @@ describe('Postgresql', () => {
       CREATE INDEX "users_email" ON "public"."users" USING btree ("email");
     `
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   it('should support all constraint types', () => {
     var commands1 = []
@@ -257,7 +265,7 @@ describe('Postgresql', () => {
       ALTER TABLE "public"."items" ADD CONSTRAINT "items_fk" FOREIGN KEY ("user_id") REFERENCES "users" ("id");
     `
     return utils.runAndCompare(commands1, commands2, expected)
-  })
+  }).timeout(5000)
 
   it('should support existing constriants with the same name', () => {
     var commands1 = [
@@ -285,5 +293,5 @@ describe('Postgresql', () => {
         `
         return utils.runAndCompare(commands1, commands2, expected, ['safe'])
       })
-  })
+  }).timeout(5000)
 })

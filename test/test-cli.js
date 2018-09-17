@@ -5,7 +5,7 @@ var childProcess = require('child_process')
 var conString1 = 'postgres://postgres:postgres@localhost/db1'
 var conSettings2 = {
   dialect: 'postgres',
-  username: 'postgres',
+  user: 'postgres',
   password: 'postgres',
   database: 'db2',
   host: 'localhost',
@@ -24,6 +24,14 @@ const exec = (cmd) => {
 }
 
 describe('CLI interface', () => {
+  before('connect', () => {
+    return utils.connect();
+  })
+
+  after('end', () => {
+    return utils.end();
+  })
+
   it('should run as a cli application', () => {
     var conString1 = 'postgres://postgres:postgres@localhost/db1'
     var conString2 = 'postgres://postgres:postgres@localhost/db2'
@@ -34,7 +42,7 @@ describe('CLI interface', () => {
         var { stdout } = result
         assert.equal(stdout, 'DROP SEQUENCE "public"."seq_name";\n')
       })
-  })
+  });
 
   it('should run as a cli application with level argument', () => {
     var conString1 = 'postgres://postgres:postgres@localhost/db1'
@@ -48,7 +56,7 @@ describe('CLI interface', () => {
       })
   })
 
-  it('should fail with an erorr', () => {
+  it('should fail with an error', () => {
     var conString1 = 'postgres://postgres:postgres@localhost/db1'
     var conString2 = 'postgres://postgres:postgres@localhost/none'
 

@@ -31,10 +31,10 @@ class Utils {
     var dbdiff = new DbDiff()
     return pync.series(levels, (level) => {
       return this.runCommands(commands1, commands2)
-        .then(() => dbdiff.compare(this.conn1, this.conn2))
+        .then(() => dbdiff.compare(this.client1, this.client2))
         .then(() => assert.equal(dbdiff.commands(level), expected))
         .then(() => this.client1.query(dbdiff.commands(level)))
-        .then(() => dbdiff.compare(this.conn1, this.conn2))
+        .then(() => dbdiff.compare(this.client1, this.client2))
         .then(() => {
           var lines = dbdiff.commands(level).split('\n')
           lines.forEach((line) => {
@@ -44,6 +44,20 @@ class Utils {
           })
         })
     })
+  }
+  
+  connect() {
+    return Promise.all([
+      this.client1.connect(),
+      this.client2.connect()
+    ])
+  }
+
+  end() {
+    return Promise.all([
+      this.client1.end(),
+      this.client2.end()
+    ])
   }
 }
 

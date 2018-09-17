@@ -3,7 +3,20 @@ var querystring = require('querystring')
 
 class PostgresClient {
   constructor (conOptions) {
-    this.conOptions = conOptions
+    if (typeof conOptions === 'string') {
+      const [_, dialect, user, password, host, database] = conOptions.match('^(.*?)://(.*?):(.*?)@(.*?)/(.*?)$')
+      conOptions = {
+        dialect,
+        user,
+        password,
+        database,
+        host,
+        dialectOptions: {
+          ssl: false
+        }
+      }
+    }
+    this.client = new pg.Client(conOptions);
   }
 
   dropTables () {
@@ -11,27 +24,12 @@ class PostgresClient {
   }
 
   connect () {
-    return new Promise((resolve, reject) => {
-      if (this.client) return resolve()
-      pg.connect(this.conOptions, (err, client, done) => {
-        if (err) return reject(err)
-        this.client = client
-        this.done = done
-        resolve()
-      })
-    })
+    if (client._connected) return Promise.resolve();
+    return this.client.connect()
   }
 
-  query (sql, params = []) {
-    return this.connect()
-      .then(() => {
-        return new Promise((resolve, reject) => {
-          this.client.query(sql, params, (err, result) => {
-            this.done()
-            err ? reject(err) : resolve(result)
-          })
-        })
-      })
+  query (sql, params) {
+    return this.client.query(sql, params)
   }
 
   find (sql, params = []) {
@@ -40,6 +38,10 @@ class PostgresClient {
 
   findOne (sql, params = []) {
     return this.query(sql, params).then((result) => result.rows[0])
+  }
+
+  end () {
+    return this.client.end();
   }
 }
 

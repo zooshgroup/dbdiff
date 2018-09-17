@@ -10,10 +10,11 @@ class PostgresDialect {
     return str
   }
 
-  describeDatabase (options) {
+  describeDatabase (options, client) {
     var schema = { dialect: 'postgres' }
-    var client = new PostgresClient(options)
-    return client.find('SELECT * FROM pg_tables WHERE schemaname NOT IN ($1, $2, $3)', ['temp', 'pg_catalog', 'information_schema'])
+    client = client || new PostgresClient(options)
+    return client.connect()
+      .then(() => client.find('SELECT * FROM pg_tables WHERE schemaname NOT IN ($1, $2, $3)', ['temp', 'pg_catalog', 'information_schema']))
       .then((tables) => (
         pync.map(tables, (table) => {
           var t = {
