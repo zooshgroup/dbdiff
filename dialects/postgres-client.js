@@ -24,7 +24,7 @@ class PostgresClient {
   }
 
   connect () {
-    if (client._connected) return Promise.resolve();
+    if (this.client._connected) return Promise.resolve();
     return this.client.connect()
   }
 
