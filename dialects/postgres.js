@@ -3,14 +3,14 @@ var pync = require('pync')
 var PostgresClient = require('./postgres-client')
 
 class PostgresDialect {
-  _unquote (str) {
+  _unquote(str) {
     if (str.substring(0, 1) === '"' && str.substring(str.length - 1) === '"') {
       return str.substring(1, str.length - 1)
     }
     return str
   }
 
-  describeDatabase (options, client) {
+  describeDatabase(options, client, closeAfter) {
     var schema = { dialect: 'postgres' }
     client = client || new PostgresClient(options)
     return client.connect()
@@ -37,15 +37,15 @@ class PostgresDialect {
               INFORMATION_SCHEMA.COLUMNS
             WHERE
               table_name=$1 AND table_schema=$2;`, [table.tablename, table.schemaname])
-          .then((columns) => {
-            t.columns = columns.map((column) => ({
-              name: column.column_name,
-              nullable: column.is_nullable === 'YES',
-              default_value: column.column_default,
-              type: dataType(column)
-            }))
-            return t
-          })
+            .then((columns) => {
+              t.columns = columns.map((column) => ({
+                name: column.column_name,
+                nullable: column.is_nullable === 'YES',
+                default_value: column.column_default,
+                type: dataType(column)
+              }))
+              return t
+            })
         })
       ))
       .then((tables) => {
@@ -139,12 +139,16 @@ class PostgresDialect {
           delete sequence.cycle_option
           return sequence
         })
+      }).then(() => {
+        if (closeAfter) {
+          client.end()
+        }
         return schema
       })
   }
 }
 
-function dataType (info) {
+function dataType(info) {
   var type
   if (info.data_type === 'ARRAY') {
     type = info.udt_name

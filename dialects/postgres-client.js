@@ -41,7 +41,7 @@ class PostgresClient {
   }
 
   end () {
-    return this.client.end();
+    return this.client.end()
   }
 }
 

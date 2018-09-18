@@ -5,7 +5,7 @@ exports.register = (dialect, clazz) => {
   dialects[dialect] = clazz
 }
 
-exports.describeDatabase = (options) => {
+exports.describeDatabase = (options, closeAfter = false) => {
   return Promise.resolve()
     .then(() => {
       var client
@@ -34,7 +34,7 @@ exports.describeDatabase = (options) => {
         return Promise.reject(new Error(`No implementation found for dialect ${dialect}`))
       }
       var obj = new (Function.prototype.bind.apply(clazz, [options]))
-      return obj.describeDatabase(options, client)
+      return obj.describeDatabase(options, client, closeAfter)
     })
 }
 

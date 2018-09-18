@@ -238,10 +238,10 @@ class DbDiff {
     })
   }
 
-  compare (conn1, conn2) {
+  compare (conn1, conn2, closeAfter = false) {
     return Promise.all([
-      dialects.describeDatabase(conn1),
-      dialects.describeDatabase(conn2)
+      dialects.describeDatabase(conn1, closeAfter),
+      dialects.describeDatabase(conn2, closeAfter)
     ])
     .then((results) => {
       var db1 = results[0]
