@@ -81,7 +81,7 @@ class PostgresDialect {
       })
       .then((indexes) => {
         indexes.forEach((index) => {
-          var tableName = index.indrelid.split('.').pop()
+          var tableName = index.indrelid.split('.').pop().replace(/^\"+|\"+$/g, '')
           var table = schema.tables.find((table) => table.name === tableName && table.schema === index.nspname)
           table.indexes.push({
             name: index.indname,
