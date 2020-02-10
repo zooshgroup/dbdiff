@@ -65,7 +65,7 @@ class PostgresDialect {
               ORDER BY k
             ) AS indkey_names,
             idx.indexprs IS NOT NULL as indexprs,
-            idx.indpred IS NOT NULL as indpred,
+            pg_get_expr(idx.indpred, idx.indrelid) AS indpred,
             ns.nspname
           FROM
             pg_index as idx
@@ -87,7 +87,8 @@ class PostgresDialect {
             name: index.indname,
             schema: table.schema,
             type: index.indam,
-            columns: index.indkey_names
+            columns: index.indkey_names,
+            predicate: index.indpred,
           })
         })
         return client.find(`
