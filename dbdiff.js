@@ -137,7 +137,7 @@ class DbDiff {
     var diff2 = _.difference(sequenceNames2, sequenceNames1)
 
     diff1.forEach((sequenceName) => {
-      this._safe(`DROP SEQUENCE ${sequenceName};`)
+      this._safe(`DROP SEQUENCE ${sequenceName} CASCADE;`)
     })
 
     diff2.forEach((sequenceName) => {
