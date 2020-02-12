@@ -199,6 +199,23 @@ class DbDiff {
     }[this._dialect]
     this._compareSequences(db1, db2)
 
+    var schemaFromDb1 = [...new Set(db1.tables.map((table) => table.schema))]
+    var schemaFromDb2 = [...new Set(db2.tables.map((table) => table.schema))]
+
+    schemaFromDb1.forEach((schema) => {
+      var s = this._findSchema(schemaFromDb2, schema)
+      if (!s) {
+          this._drop(`DROP SCHEMA IF EXISTS ${this._quote(schema)} CASCADE;`)
+      }
+    })
+
+    schemaFromDb2.forEach((schema) => {
+      var s = this._findSchema(schemaFromDb1, schema)
+      if (!s) {
+        this._drop(`CREATE SCHEMA IF NOT EXISTS ${this._quote(schema)};`)
+      }
+    })
+
     db1.tables.forEach((table) => {
       var t = this._findTable(db2, table)
       if (!t) {
@@ -297,6 +314,10 @@ class DbDiff {
 
   _findTable (db, table) {
     return db.tables.find((t) => t.name === table.name && t.schema === table.schema)
+  }
+
+  _findSchema (schemas, schema) {
+    return schemas.includes(schema)
   }
 
   commands (type) {
