@@ -161,6 +161,7 @@ class DbDiff {
   }
 
   _compareConstraints (table1, table2) {
+    var constraints = []
     var tableName = this._fullName(table2)
     table2.constraints.forEach((constraint2) => {
       var table2Name = this._fullNameFromConstraints(constraint2)
@@ -180,15 +181,29 @@ class DbDiff {
         var fullName = this._quote(constraint2.name)
         if (constraint2.type === 'primary') {
           if (this._dialect === 'mysql') fullName = 'foo'
-          func(`ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} PRIMARY KEY (${keys});`)
+          constraints.push({
+            func,
+            order: 1,
+            sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} PRIMARY KEY (${keys});`,
+          })
         } else if (constraint2.type === 'unique') {
-          func(`ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} UNIQUE (${keys});`)
+          constraints.push({
+            func,
+            order: 2,
+            sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} UNIQUE (${keys});`,
+          })
         } else if (constraint2.type === 'foreign') {
           var foreignKeys = constraint2.referenced_columns.map((s) => `${this._quote(s)}`).join(', ')
-          func(`ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} FOREIGN KEY (${keys}) REFERENCES ${table2Name} (${foreignKeys});`)
+          constraints.push({
+            func,
+            order: 3,
+            sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} FOREIGN KEY (${keys}) REFERENCES ${table2Name} (${foreignKeys});`,
+          })
         }
       }
     })
+
+    return constraints
   }
 
   compareSchemas (db1, db2) {
@@ -250,10 +265,16 @@ class DbDiff {
       }
     })
 
+    var constraints = []
     db2.tables.forEach((table) => {
       var t = this._findTable(db1, table)
-      this._compareConstraints(t, table)
+      constraints = constraints.concat(this._compareConstraints(t, table))
     })
+
+    // execute add constraints after ordering since we should add primary and unqiue keys before foreign ones
+    for (var constraint of constraints.sort((a, b) => a.order - b.order)) {
+      constraint.func(constraint.sql)
+    }
   }
 
   compare (conn1, conn2, closeAfter = false) {
