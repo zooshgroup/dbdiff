@@ -154,7 +154,7 @@ class DbDiff {
       var desc2 = this._sequenceDescription(sequence2)
 
       if (desc2 !== desc1) {
-        this._safe(`DROP SEQUENCE ${sequenceName};`)
+        this._safe(`DROP SEQUENCE ${sequenceName}; CASCADE`)
         this._safe(desc2)
       }
     })
