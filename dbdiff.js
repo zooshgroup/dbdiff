@@ -163,6 +163,7 @@ class DbDiff {
   _compareConstraints (table1, table2) {
     var tableName = this._fullName(table2)
     table2.constraints.forEach((constraint2) => {
+      var table2Name = this._fullNameFromConstraints(constraint2)
       var constraint1 = table1 && table1.constraints.find((cons) => constraint2.name === cons.name)
       if (constraint1) {
         if (_.isEqual(constraint1, constraint2)) return
@@ -184,7 +185,7 @@ class DbDiff {
           func(`ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} UNIQUE (${keys});`)
         } else if (constraint2.type === 'foreign') {
           var foreignKeys = constraint2.referenced_columns.map((s) => `${this._quote(s)}`).join(', ')
-          func(`ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} FOREIGN KEY (${keys}) REFERENCES ${this._quote(constraint2.referenced_table)} (${foreignKeys});`)
+          func(`ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} FOREIGN KEY (${keys}) REFERENCES ${table2Name} (${foreignKeys});`)
         }
       }
     })
@@ -310,6 +311,11 @@ class DbDiff {
   _fullName (obj) {
     if (obj.schema) return `${this._quote(obj.schema)}.${this._quote(obj.name)}`
     return this._quote(obj.name)
+  }
+
+  _fullNameFromConstraints (obj) {
+    if (obj.schema) return `${this._quote(obj.schema)}.${this._quote(obj.referenced_table)}`
+    return this._quote(obj.referenced_table)
   }
 
   _findTable (db, table) {
