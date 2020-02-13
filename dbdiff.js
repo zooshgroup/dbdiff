@@ -197,8 +197,6 @@ class DbDiff {
       mysql: '`',
       postgres: '"'
     }[this._dialect]
-    this._compareSequences(db1, db2)
-
     var schemaFromDb1 = [...new Set(db1.tables.map((table) => table.schema))]
     var schemaFromDb2 = [...new Set(db2.tables.map((table) => table.schema))]
 
@@ -216,10 +214,12 @@ class DbDiff {
       }
     })
 
+    this._compareSequences(db1, db2)
+
     db1.tables.forEach((table) => {
       var t = this._findTable(db2, table)
       if (!t) {
-        this._drop(`DROP TABLE ${this._fullName(table)};`)
+        this._drop(`DROP TABLE IF EXISTS ${this._fullName(table)};`)
       }
     })
 
