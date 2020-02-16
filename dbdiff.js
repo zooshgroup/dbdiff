@@ -283,7 +283,9 @@ class DbDiff {
     var constraints = []
     db2.tables.forEach((table) => {
       var t = this._findTable(db1, table)
-      constraints = constraints.concat(this._compareConstraints(t, table))
+      if (t) {
+        constraints = constraints.concat(this._compareConstraints(t, table))
+      }
     })
 
     // execute add constraints after ordering since we should add primary and unqiue keys before foreign ones
