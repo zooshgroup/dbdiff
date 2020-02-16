@@ -78,7 +78,7 @@ class DbDiff {
     var tableName = this._fullName(table)
     var keys = index.columns.map((key) => `${this._quote(key)}`).join(',')
     if (this._dialect === 'postgres') {
-      this._safe(`CREATE INDEX ${this._quote(index.name)} ON ${tableName} USING ${index.type} (${keys});`)
+      this._safe(`CREATE INDEX ${this._quote(index.name)} ON ${tableName} USING ${index.type} (${keys})${(index.predicate)? ` WHERE ${index.predicate}` : ''};`)
     } else {
       // mysql
       this._safe(`CREATE INDEX ${this._quote(index.name)} USING ${index.type} ON ${tableName} (${keys});`)
