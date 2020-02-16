@@ -163,44 +163,59 @@ class DbDiff {
   _compareConstraints (table1, table2) {
     var constraints = []
     var tableName = this._fullName(table2)
-    table2.constraints.forEach((constraint2) => {
-      var table2Name = this._fullNameFromConstraints(constraint2)
-      var constraint1 = table1 && table1.constraints.find((cons) => constraint2.name === cons.name)
-      if (constraint1) {
+    // drop old constraints if not existing anymore
+    table1.constraints.forEach((constraint1) => {
+      var constraint2 = table2 && table2.constraints.find((cons) => constraint1.name === cons.name)
+      if (!constraint2) {
         if (_.isEqual(constraint1, constraint2)) return
         if (this._dialect === 'postgres') {
-          this._safe(`ALTER TABLE ${tableName} DROP CONSTRAINT ${this._quote(constraint2.name)};`)
+          this._safe(`ALTER TABLE ${tableName} DROP CONSTRAINT ${this._quote(constraint1.name)};`)
         } else {
-          this._safe(`ALTER TABLE ${tableName} DROP INDEX ${this._quote(constraint2.name)};`)
+          this._safe(`ALTER TABLE ${tableName} DROP INDEX ${this._quote(constraint1.name)};`)
         }
         constraint1 = null
       }
-      if (!constraint1) {
-        var keys = constraint2.columns.map((s) => `${this._quote(s)}`).join(', ')
-        var func = (table1 ? this._warn : this._safe).bind(this)
-        var fullName = this._quote(constraint2.name)
-        if (constraint2.type === 'primary') {
-          if (this._dialect === 'mysql') fullName = 'foo'
-          constraints.push({
-            func,
-            order: 1,
-            sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} PRIMARY KEY (${keys});`,
-          })
-        } else if (constraint2.type === 'unique') {
-          constraints.push({
-            func,
-            order: 2,
-            sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} UNIQUE (${keys});`,
-          })
-        } else if (constraint2.type === 'foreign') {
-          var foreignKeys = constraint2.referenced_columns.map((s) => `${this._quote(s)}`).join(', ')
-          constraints.push({
-            func,
-            order: 3,
-            sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} FOREIGN KEY (${keys}) REFERENCES ${table2Name} (${foreignKeys});`,
-          })
+    })
+
+    // check new constraints
+    table2.constraints.forEach((constraint2) => {
+        var table2Name = this._fullNameFromConstraints(constraint2)
+        var constraint1 = table1 && table1.constraints.find((cons) => constraint2.name === cons.name)
+        if (constraint1) {
+          if (_.isEqual(constraint1, constraint2)) return
+          if (this._dialect === 'postgres') {
+            this._safe(`ALTER TABLE ${tableName} DROP CONSTRAINT ${this._quote(constraint2.name)};`)
+          } else {
+            this._safe(`ALTER TABLE ${tableName} DROP INDEX ${this._quote(constraint2.name)};`)
+          }
+          constraint1 = null
         }
-      }
+        if (!constraint1) {
+          var keys = constraint2.columns.map((s) => `${this._quote(s)}`).join(', ')
+          var func = (table1 ? this._warn : this._safe).bind(this)
+          var fullName = this._quote(constraint2.name)
+          if (constraint2.type === 'primary') {
+            if (this._dialect === 'mysql') fullName = 'foo'
+            constraints.push({
+              func,
+              order: 1,
+              sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} PRIMARY KEY (${keys});`,
+            })
+          } else if (constraint2.type === 'unique') {
+            constraints.push({
+              func,
+              order: 2,
+              sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} UNIQUE (${keys});`,
+            })
+          } else if (constraint2.type === 'foreign') {
+            var foreignKeys = constraint2.referenced_columns.map((s) => `${this._quote(s)}`).join(', ')
+            constraints.push({
+              func,
+              order: 3,
+              sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} FOREIGN KEY (${keys}) REFERENCES ${table2Name} (${foreignKeys});`,
+            })
+          }
+        }
     })
 
     return constraints
