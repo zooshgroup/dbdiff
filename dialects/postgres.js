@@ -81,13 +81,13 @@ class PostgresDialect {
       })
       .then((indexes) => {
         indexes.forEach((index) => {
-          var tableName = index.indrelid.split('.').pop().replace(/^\"+|\"+$/g, '')
+          var tableName = this._unquote(index.indrelid).split('.').pop()
           var table = schema.tables.find((table) => table.name === tableName && table.schema === index.nspname)
           table.indexes.push({
             name: index.indname,
             schema: table.schema,
             type: index.indam,
-            columns: index.indkey_names,
+            columns: index.indkey_names.map((column) => this._unquote(column)),
             predicate: index.indpred,
           })
         })
