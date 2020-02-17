@@ -226,7 +226,7 @@ class DbDiff {
     schemaFromDb2.forEach((schema) => {
       var s = this._findSchema(schemaFromDb1, schema)
       if (!s) {
-        this._drop(`CREATE SCHEMA IF NOT EXISTS ${this._quote(schema)};`)
+        this._safe(`CREATE SCHEMA IF NOT EXISTS ${this._quote(schema)};`)
       }
     })
 

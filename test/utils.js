@@ -13,18 +13,25 @@ class Utils {
   }
 
   resetDatabases () {
-    return Promise.all([
-      this.client1.dropTables(),
-      this.client2.dropTables()
-    ])
+    if (this.dialect === 'postgres') {
+      [
+        this.client1.query('DROP SCHEMA IF EXISTS "public" CASCADE;CREATE SCHEMA IF NOT EXISTS "public";'),
+        this.client2.query('DROP SCHEMA IF EXISTS "public" CASCADE;CREATE SCHEMA IF NOT EXISTS "public";'),
+      ].reduce((p, fn) => p.then(fn), Promise.resolve())
+    } else {
+      [
+        this.client1.dropTables(),
+        this.client2.dropTables(),
+      ].reduce((p, fn) => p.then(fn), Promise.resolve())
+    }
   }
 
   runCommands (commands1, commands2) {
-    return this.resetDatabases()
-      .then(() => Promise.all([
-        pync.series(commands1, (command) => this.client1.query(command)),
-        pync.series(commands2, (command) => this.client2.query(command))
-      ]))
+    this.resetDatabases()
+    return Promise.all([
+      pync.series(commands1, (command) => this.client1.query(command)),
+      pync.series(commands2, (command) => this.client2.query(command))
+    ])
   }
 
   runAndCompare (commands1, commands2, expected, levels = ['drop', 'warn', 'safe']) {

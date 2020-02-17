@@ -20,6 +20,7 @@ describe('Postgresql', () => {
   })
 
   after('end', () => {
+    // reset public schema
     return utils.end();
   })
 
@@ -27,6 +28,8 @@ describe('Postgresql', () => {
     var commands1 = []
     var commands2 = ['CREATE TABLE users (email VARCHAR(255), tags varchar(255)[])']
     var expected = dedent`
+      CREATE SCHEMA IF NOT EXISTS "public";
+
       CREATE TABLE "public"."users" (
         "email" character varying(255) NULL,
         "tags" varchar[] NULL
@@ -40,11 +43,19 @@ describe('Postgresql', () => {
     var commands2 = []
     return Promise.resolve()
       .then(() => {
-        var expected = 'DROP TABLE "public"."users";'
+        var expected = dedent`
+        DROP SCHEMA IF EXISTS "public" CASCADE;
+
+        DROP TABLE IF EXISTS "public"."users" CASCADE;
+      `
         return utils.runAndCompare(commands1, commands2, expected, ['drop'])
       })
       .then(() => {
-        var expected = '-- DROP TABLE "public"."users";'
+        var expected = dedent`
+        -- DROP SCHEMA IF EXISTS "public" CASCADE;
+
+        -- DROP TABLE IF EXISTS "public"."users" CASCADE;
+        `
         return utils.runAndCompare(commands1, commands2, expected, ['safe', 'warn'])
       })
   }).timeout(5000)
@@ -53,7 +64,9 @@ describe('Postgresql', () => {
     var commands1 = []
     var commands2 = ['CREATE TABLE users (id serial)']
     var expected = dedent`
-      CREATE SEQUENCE "public"."users_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 9223372036854775807 START 1 NO CYCLE;
+      CREATE SCHEMA IF NOT EXISTS "public";
+
+      CREATE SEQUENCE "public"."users_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 NO CYCLE;
 
       CREATE TABLE "public"."users" (
         "id" integer DEFAULT nextval('users_id_seq'::regclass) NOT NULL
@@ -160,7 +173,7 @@ describe('Postgresql', () => {
   it('should drop a sequence', () => {
     var commands1 = ['CREATE SEQUENCE seq_name']
     var commands2 = []
-    var expected = 'DROP SEQUENCE "public"."seq_name";'
+    var expected = 'DROP SEQUENCE IF EXISTS "public"."seq_name" CASCADE;'
     return utils.runAndCompare(commands1, commands2, expected)
   }).timeout(5000)
 
@@ -224,6 +237,8 @@ describe('Postgresql', () => {
       'CREATE INDEX users_email ON users (email)'
     ]
     var expected = dedent`
+      CREATE SCHEMA IF NOT EXISTS "public";
+
       CREATE TABLE "public"."users" (
         "email" character varying(255) NULL
       );
@@ -243,9 +258,11 @@ describe('Postgresql', () => {
       'ALTER TABLE items ADD CONSTRAINT items_fk FOREIGN KEY (user_id) REFERENCES users (id);'
     ]
     var expected = dedent`
-      CREATE SEQUENCE "public"."users_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 9223372036854775807 START 1 NO CYCLE;
+      CREATE SCHEMA IF NOT EXISTS "public";
 
-      CREATE SEQUENCE "public"."items_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 9223372036854775807 START 1 NO CYCLE;
+      CREATE SEQUENCE "public"."users_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 NO CYCLE;
+      
+      CREATE SEQUENCE "public"."items_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 NO CYCLE;
 
       CREATE TABLE "public"."users" (
         "id" integer DEFAULT nextval('users_id_seq'::regclass) NOT NULL,
@@ -258,11 +275,11 @@ describe('Postgresql', () => {
         "user_id" bigint NULL
       );
 
-      ALTER TABLE "public"."users" ADD CONSTRAINT "email_unique" UNIQUE ("email");
-
       ALTER TABLE "public"."users" ADD CONSTRAINT "users_pk" PRIMARY KEY ("id");
 
-      ALTER TABLE "public"."items" ADD CONSTRAINT "items_fk" FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+      ALTER TABLE "public"."users" ADD CONSTRAINT "email_unique" UNIQUE ("email");
+
+      ALTER TABLE "public"."items" ADD CONSTRAINT "items_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id");
     `
     return utils.runAndCompare(commands1, commands2, expected)
   }).timeout(5000)
