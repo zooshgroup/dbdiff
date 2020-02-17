@@ -163,21 +163,6 @@ class DbDiff {
   _compareConstraints (table1, table2) {
     var constraints = []
     var tableName = this._fullName(table2)
-    // drop old constraints if not existing anymore
-    table1.constraints.forEach((constraint1) => {
-      var constraint2 = table2 && table2.constraints.find((cons) => constraint1.name === cons.name)
-      if (!constraint2) {
-        if (_.isEqual(constraint1, constraint2)) return
-        if (this._dialect === 'postgres') {
-          this._safe(`ALTER TABLE ${tableName} DROP CONSTRAINT ${this._quote(constraint1.name)};`)
-        } else {
-          this._safe(`ALTER TABLE ${tableName} DROP INDEX ${this._quote(constraint1.name)};`)
-        }
-        constraint1 = null
-      }
-    })
-
-    // check new constraints
     table2.constraints.forEach((constraint2) => {
         var table2Name = this._fullNameFromConstraints(constraint2)
         var constraint1 = table1 && table1.constraints.find((cons) => constraint2.name === cons.name)
@@ -250,7 +235,7 @@ class DbDiff {
     db1.tables.forEach((table) => {
       var t = this._findTable(db2, table)
       if (!t) {
-        this._drop(`DROP TABLE IF EXISTS ${this._fullName(table)};`)
+        this._drop(`DROP TABLE IF EXISTS ${this._fullName(table)} CASCADE;`)
       }
     })
 
@@ -283,9 +268,7 @@ class DbDiff {
     var constraints = []
     db2.tables.forEach((table) => {
       var t = this._findTable(db1, table)
-      if (t) {
-        constraints = constraints.concat(this._compareConstraints(t, table))
-      }
+      constraints = constraints.concat(this._compareConstraints(t, table))
     })
 
     // execute add constraints after ordering since we should add primary and unqiue keys before foreign ones
@@ -352,7 +335,7 @@ class DbDiff {
   }
 
   _fullNameFromConstraints (obj) {
-    if (obj.schema) return `${this._quote(obj.schema)}.${this._quote(obj.referenced_table)}`
+    if (obj.schema) return `${this._quote(obj.referenced_table_schema)}.${this._quote(obj.referenced_table)}`
     return this._quote(obj.referenced_table)
   }
 
