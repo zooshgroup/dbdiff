@@ -206,7 +206,7 @@ class DbDiff {
     return constraints
   }
 
-  compareSchemas (db1, db2) {
+  compareSchemas (db1, db2, beautify=true) {
     this.sql = []
     this._dialect = db1.dialect
     this._quotation = {
@@ -250,9 +250,9 @@ class DbDiff {
             var constraint = table.constraints.find((constraints) => constraints.type === 'primary')
             table.constraints.splice(table.constraints.indexOf(constraint), 1)
           }
-          return `\n  ${this._quote(col.name)} ${this._columnDescription(col)}${extra}`
+          return `${beautify ? '\n  ' : ' '}${this._quote(col.name)} ${this._columnDescription(col)}${extra}`
         })
-        this._safe(`CREATE TABLE ${tableName} (${columns.join(',')}\n);`)
+        this._safe(`CREATE TABLE ${tableName} (${columns.join(',')}${beautify ? '\n' : ''});`)
 
         var indexNames2 = this._indexNames(table)
         indexNames2.forEach((indexName) => {
