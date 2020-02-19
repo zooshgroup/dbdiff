@@ -20,7 +20,6 @@ describe('Postgresql', () => {
   })
 
   after('end', () => {
-    // reset public schema
     return utils.end();
   })
 
