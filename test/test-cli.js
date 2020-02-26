@@ -40,7 +40,7 @@ describe('CLI interface', () => {
       .then(() => exec(`node index.js ${conString1} ${conString2}`))
       .then((result) => {
         var { stdout } = result
-        assert.equal(stdout, 'DROP SEQUENCE "public"."seq_name";\n')
+        assert.equal(stdout, 'DROP SEQUENCE IF EXISTS "public"."seq_name" CASCADE;\n')
       })
   });
 
@@ -52,7 +52,7 @@ describe('CLI interface', () => {
       .then(() => exec(`node index.js -l safe ${conString1} ${conString2}`))
       .then((result) => {
         var { stdout } = result
-        assert.equal(stdout, '-- DROP TABLE "public"."users";\n')
+        assert.equal(stdout, '-- DROP SCHEMA IF EXISTS "public" CASCADE;\n\n-- DROP TABLE IF EXISTS "public"."users" CASCADE;\n')
       })
   })
 

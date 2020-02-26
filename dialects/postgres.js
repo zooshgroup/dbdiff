@@ -65,7 +65,7 @@ class PostgresDialect {
               ORDER BY k
             ) AS indkey_names,
             idx.indexprs IS NOT NULL as indexprs,
-            idx.indpred IS NOT NULL as indpred,
+            pg_get_expr(idx.indpred, idx.indrelid) AS indpred,
             ns.nspname
           FROM
             pg_index as idx
@@ -81,13 +81,15 @@ class PostgresDialect {
       })
       .then((indexes) => {
         indexes.forEach((index) => {
-          var tableName = index.indrelid.split('.').pop()
+          var tableName = this._unquote(index.indrelid).split('.').pop()
+
           var table = schema.tables.find((table) => table.name === tableName && table.schema === index.nspname)
           table.indexes.push({
             name: index.indname,
             schema: table.schema,
             type: index.indam,
-            columns: index.indkey_names
+            columns: index.indkey_names.map((column) => this._unquote(column)),
+            predicate: index.indpred,
           })
         })
         return client.find(`
@@ -122,7 +124,15 @@ class PostgresDialect {
             var substr = description.substring(m + 'REFERENCES'.length)
             i = substr.indexOf('(')
             n = substr.indexOf(')')
-            info.referenced_table = substr.substring(0, i).trim()
+            var full_referenced_table = this._unquote(substr.substring(0, i).trim()) // can contains also schema name as schema.table
+            if (full_referenced_table.includes('.')) {
+              full_referenced_table = full_referenced_table.split('.')
+              info.referenced_table_schema = full_referenced_table[0]
+              info.referenced_table = full_referenced_table[1]
+            } else {
+              info.referenced_table_schema = 'public' // if the name doesn't contains the schema, we use 'public' schema as default
+              info.referenced_table = full_referenced_table
+            }
             info.referenced_columns = substr.substring(i + 1, n).split(',').map((s) => this._unquote(s.trim()))
           }
         })

@@ -4,7 +4,7 @@ Compares two databases and prints SQL commands to modify the first one in order 
 
 **It does NOT execute the statements**. It only prints the statements.
 
-It supports PostgreSQL and MySQL.
+It supports PostgreSQL and MySQL. **(MySQL tests are not working, and need some fixes)**
 
 # Installing
 
