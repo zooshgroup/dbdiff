@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha",
-    "coverage": "nyc --reporter=lcov npm test && nyc report"
+    "coverage": "nyc --reporter=lcov npm test && nyc report",
+    "docker:start": "docker-compose -f docker/docker-compose.yml --project-name dbdiff up -d --force-recreate",
+    "docker:stop": "docker-compose -f docker/docker-compose.yml --project-name dbdiff down",
+    "docker:log": "docker-compose -f docker/docker-compose.yml --project-name dbdiff logs"
   },
   "keywords": [
     "pg",

@@ -1,0 +1,17 @@
+version: '2'
+services:
+  postgres:
+    image: postgres:12.1-alpine
+    ports:
+      - "5432:5432"
+    networks:
+      - db-net
+    volumes:
+      - ./initpg:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+networks:
+  db-net:
+    driver: bridge
