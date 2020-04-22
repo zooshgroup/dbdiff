@@ -254,19 +254,15 @@ describe('Postgresql', () => {
       'CREATE TABLE items (id serial, name VARCHAR(255), user_id bigint);',
       'ALTER TABLE users ADD CONSTRAINT users_pk PRIMARY KEY (id);',
       'ALTER TABLE users ADD CONSTRAINT email_unique UNIQUE (email);',
-      'ALTER TABLE items ADD CONSTRAINT items_fk FOREIGN KEY (user_id) REFERENCES users (id);'
+      'ALTER TABLE items ADD CONSTRAINT items_fk FOREIGN KEY (user_id) REFERENCES users (id);',
+      'ALTER TABLE items ADD CONSTRAINT items_fk2 FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE CASCADE on delete set null;'
     ]
     var expected = dedent`
       CREATE SCHEMA IF NOT EXISTS "public";
 
-      CREATE SEQUENCE "public"."users_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 NO CYCLE;
-      
       CREATE SEQUENCE "public"."items_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 NO CYCLE;
 
-      CREATE TABLE "public"."users" (
-        "id" integer DEFAULT nextval('users_id_seq'::regclass) NOT NULL,
-        "email" character varying(255) NULL
-      );
+      CREATE SEQUENCE "public"."users_id_seq" INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1 NO CYCLE;
 
       CREATE TABLE "public"."items" (
         "id" integer DEFAULT nextval('items_id_seq'::regclass) NOT NULL,
@@ -274,10 +270,17 @@ describe('Postgresql', () => {
         "user_id" bigint NULL
       );
 
+      CREATE TABLE "public"."users" (
+        "id" integer DEFAULT nextval('users_id_seq'::regclass) NOT NULL,
+        "email" character varying(255) NULL
+      );
+
       ALTER TABLE "public"."users" ADD CONSTRAINT "users_pk" PRIMARY KEY ("id");
 
       ALTER TABLE "public"."users" ADD CONSTRAINT "email_unique" UNIQUE ("email");
 
+      ALTER TABLE "public"."items" ADD CONSTRAINT "items_fk2" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id") ON UPDATE CASCADE ON DELETE SET NULL;
+      
       ALTER TABLE "public"."items" ADD CONSTRAINT "items_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id");
     `
     return utils.runAndCompare(commands1, commands2, expected)

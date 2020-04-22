@@ -152,7 +152,8 @@ dbdiff.describeDatabase({
           "referenced_table": "users",
           "referenced_columns": [
             "id"
-          ]
+          ],
+          "onActions":"ON DELETE CASCADE"
         }
       ],
       "columns": [
