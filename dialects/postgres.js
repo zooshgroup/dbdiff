@@ -31,6 +31,8 @@ class PostgresDialect {
               data_type,
               udt_name,
               character_maximum_length,
+              numeric_scale,
+              numeric_precision,
               is_nullable,
               column_default
             FROM
@@ -184,6 +186,8 @@ function dataType(info) {
 
   if (info.character_maximum_length) {
     type = type + '(' + info.character_maximum_length + ')'
+  } else if (info.numeric_precision && info.numeric_scale) {
+    type = type + '(' + info.numeric_precision +',' + info.numeric_scale +')'
   }
   return type
 }
