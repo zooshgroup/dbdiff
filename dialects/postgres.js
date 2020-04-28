@@ -14,7 +14,7 @@ class PostgresDialect {
     var schema = { dialect: 'postgres' }
     client = client || new PostgresClient(options)
     return client.connect()
-      .then(() => client.find('SELECT * FROM pg_tables WHERE schemaname NOT IN ($1, $2, $3)', ['temp', 'pg_catalog', 'information_schema']))
+      .then(() => client.find('SELECT * FROM pg_tables WHERE schemaname NOT IN ($1, $2, $3) ORDER BY schemaname, tablename', ['temp', 'pg_catalog', 'information_schema']))
       .then((tables) => (
         pync.map(tables, (table) => {
           var t = {
@@ -76,12 +76,14 @@ class PostgresDialect {
           JOIN pg_namespace as ns
             ON ns.oid = i.relnamespace
             AND ns.nspname NOT IN ('pg_catalog', 'pg_toast')
-          WHERE (NOT idx.indisprimary) AND (NOT idx.indisunique);
+          WHERE (NOT idx.indisprimary) AND (NOT idx.indisunique)
+          ORDER BY idx.indrelid
+          ;
         `)
       })
       .then((indexes) => {
         indexes.forEach((index) => {
-          var tableName = this._unquote(index.indrelid).split('.').pop()
+          var tableName = this._unquote(index.indrelid.split('.').pop())
 
           var table = schema.tables.find((table) => table.name === tableName && table.schema === index.nspname)
           table.indexes.push({
@@ -107,7 +109,7 @@ class PostgresDialect {
           p: 'primary'
         }
         constraints.forEach((constraint) => {
-          var tableFrom = this._unquote(constraint.table_from).split('.').pop()
+          var tableFrom = this._unquote(constraint.table_from.split('.').pop())
           var table = schema.tables.find((table) => table.name === tableFrom && table.schema === constraint.nspname)
           var { description } = constraint
           var i = description.indexOf('(')
@@ -117,26 +119,34 @@ class PostgresDialect {
             name: constraint.conname,
             schema: table.schema,
             type: types[constraint.contype],
-            columns: description.substring(i + 1, n).split(',').map((s) => this._unquote(s.trim()))
+            columns: description.substring(i + 1, n).split(',').map((s) => this._unquote(s.trim())),
+          }
+          if (constraint.contype === 'f') {
+            info.onActions = ''
           }
           table.constraints.push(info)
           if (m > 0) {
             var substr = description.substring(m + 'REFERENCES'.length)
+
             i = substr.indexOf('(')
             n = substr.indexOf(')')
-            var full_referenced_table = this._unquote(substr.substring(0, i).trim()) // can contains also schema name as schema.table
+            var full_referenced_table = substr.substring(0, i).trim() // can contains also schema name as schema.table
             if (full_referenced_table.includes('.')) {
               full_referenced_table = full_referenced_table.split('.')
-              info.referenced_table_schema = full_referenced_table[0]
-              info.referenced_table = full_referenced_table[1]
+              info.referenced_table_schema = this._unquote(full_referenced_table[0])
+              info.referenced_table = this._unquote(full_referenced_table[1])
             } else {
               info.referenced_table_schema = 'public' // if the name doesn't contains the schema, we use 'public' schema as default
-              info.referenced_table = full_referenced_table
+              info.referenced_table = this._unquote(full_referenced_table)
             }
+
             info.referenced_columns = substr.substring(i + 1, n).split(',').map((s) => this._unquote(s.trim()))
+            if (constraint.contype === 'f') {
+              info.onActions = (substr.substr(n+1).trim())
+            }
           }
         })
-        return client.find('SELECT * FROM information_schema.sequences')
+        return client.find('SELECT * FROM information_schema.sequences ORDER BY sequence_schema, sequence_name')
       })
       .then((sequences) => {
         schema.sequences = sequences.map((sequence) => {

@@ -197,7 +197,7 @@ class DbDiff {
             constraints.push({
               func,
               order: 3,
-              sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} FOREIGN KEY (${keys}) REFERENCES ${table2Name} (${foreignKeys});`,
+              sql: `ALTER TABLE ${tableName} ADD CONSTRAINT ${fullName} FOREIGN KEY (${keys}) REFERENCES ${table2Name} (${foreignKeys})${constraint2.onActions ? ' ' + constraint2.onActions : ''};`,
             })
           }
         }
