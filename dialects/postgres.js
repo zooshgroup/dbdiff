@@ -186,7 +186,7 @@ function dataType(info) {
 
   if (info.character_maximum_length) {
     type = type + '(' + info.character_maximum_length + ')'
-  } else if (info.numeric_precision && info.numeric_scale) {
+  } else if (info.data_type ==='numeric' && info.numeric_precision) {
     type = type + '(' + info.numeric_precision +',' + info.numeric_scale +')'
   }
   return type
