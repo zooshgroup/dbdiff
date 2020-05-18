@@ -25,13 +25,15 @@ describe('Postgresql', () => {
 
   it('should create a table', () => {
     var commands1 = []
-    var commands2 = ['CREATE TABLE users (email VARCHAR(255), tags varchar(255)[])']
+    var commands2 = ['CREATE TABLE users (email VARCHAR(255), tags varchar(255)[], num numeric(15, 10), num_no_scale numeric)']
     var expected = dedent`
       CREATE SCHEMA IF NOT EXISTS "public";
 
       CREATE TABLE "public"."users" (
         "email" character varying(255) NULL,
-        "tags" varchar[] NULL
+        "tags" varchar[] NULL,
+        "num" numeric(15,10) NULL,
+        "num_no_scale" numeric NULL
       );
     `
     return utils.runAndCompare(commands1, commands2, expected)
@@ -78,9 +80,11 @@ describe('Postgresql', () => {
     var commands1 = ['CREATE TABLE users (email VARCHAR(255))']
     var commands2 = [
       'CREATE TABLE users (email VARCHAR(255))',
-      'ALTER TABLE users ADD COLUMN first_name VARCHAR(255)'
+      'ALTER TABLE users ADD COLUMN first_name VARCHAR(255)',
+      'ALTER TABLE users ADD COLUMN num NUMERIC(15, 10)'
     ]
-    var expected = 'ALTER TABLE "public"."users" ADD COLUMN "first_name" character varying(255) NULL;'
+    var expected = 'ALTER TABLE "public"."users" ADD COLUMN "first_name" character varying(255) NULL;\n\n' +
+      'ALTER TABLE "public"."users" ADD COLUMN "num" numeric(15,10) NULL;'
     return utils.runAndCompare(commands1, commands2, expected)
   }).timeout(5000)
 
@@ -128,6 +132,32 @@ describe('Postgresql', () => {
         return utils.runAndCompare(commands1, commands2, expected, ['safe'])
       })
   }).timeout(5000)
+
+  it('should change the type of a column - numeric precision', () => {
+    var commands1 = [
+      'create table tab_with_num (email VARCHAR(255))',
+      'alter table tab_with_num add column num numeric(10, 5)'
+    ]
+    var commands2 = [
+      'create table tab_with_num (email VARCHAR(255))',
+      'alter table tab_with_num add column num numeric(20, 10)'
+    ]
+    return Promise.resolve()
+      .then(() => {
+        var expected = dedent`
+          -- Previous data type was numeric(10,5)
+          ALTER TABLE "public"."tab_with_num" ALTER COLUMN "num" SET DATA TYPE numeric(20,10);
+        `
+        return utils.runAndCompare(commands1, commands2, expected, ['drop', 'warn'])
+      })
+      .then(() => {
+        var expected = dedent`
+          -- Previous data type was numeric(10,5)
+          -- ALTER TABLE "public"."tab_with_num" ALTER COLUMN "num" SET DATA TYPE numeric(20,10);
+        `
+        return utils.runAndCompare(commands1, commands2, expected, ['safe'])
+      })
+  })
 
   it('should change a column to not nullable', () => {
     var commands1 = [
